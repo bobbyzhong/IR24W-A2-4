@@ -35,7 +35,7 @@ python -m pip install -r packages/requirements.txt
 Set the options in the config.ini file. The following
 configurations exist.
 
-**USERAGENT**: Set the useragent to `IR F19 uci-id1,uci-id2,uci-id3`. 
+**USERAGENT**: Set the useragent to `IR UW24 uci-id1,uci-id2,uci-id3`. 
 It is important to set the useragent appropriately to get the credit for 
 hitting our cache.
 
