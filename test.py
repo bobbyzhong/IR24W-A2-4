@@ -10,7 +10,11 @@ page = requests.get(URL)
 
 
 
+
 def scraper(url, resp):
+    
+
+
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
 
@@ -25,17 +29,21 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     print("URL", url)
+    # if resp.status != 200:
+    #     return []
     links = []
 
     # soup = BeautifulSoup(resp.raw_response.content, "html.parser")
     soup = BeautifulSoup(resp.content, "html.parser")
-    for link in soup.find_all("a"):
-        new_url = link.get("href")
-        if new_url:
-            abs_link = urljoin(url, new_url)
-            abs_link, _ = urldefrag(abs_link)
-            links.append(abs_link)
-            print(abs_link)
+    with open("logs.txt", 'a') as f:
+        for link in soup.find_all("a"):
+            new_url = link.get("href")
+            if new_url and is_valid(new_url):
+                abs_link = urljoin(url, new_url)
+                abs_link, _ = urldefrag(abs_link)
+                links.append(abs_link)
+                print(abs_link)
+                f.write(abs_link + "\n")
 
 
     return links
@@ -48,6 +56,10 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
+ 
+        if not re.search(r"^(.+\.)?(ics|cs|informatics|stat)\.uci\.edu$", parsed.netloc):
+            return False
+
         return not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
@@ -63,4 +75,6 @@ def is_valid(url):
         raise
 
 links = extract_next_links(URL, page)
-print("LINKS", links)
+
+print("Valid 1", is_valid("http://vision.ics.uci.edu"))
+print("Valid 2", is_valid("http://hello.uci.edu/"))
