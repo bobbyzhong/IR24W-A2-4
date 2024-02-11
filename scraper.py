@@ -47,7 +47,7 @@ def scraper(url, resp):
     politeness_manager = PolitenessManager()
     trap_detector = TrapDetector()
 
-    if politeness_manager.can_access(url) and not trap_detector.detect_trap(url):
+    if politeness_manager.can_access(url) and not trap_detector.detect_trap(url) and is_valid(url):
         links = extract_next_links(url, resp)
         crawled_pages = crawl_pages(url, resp)
         log_stats(crawled_pages)
@@ -68,10 +68,12 @@ def extract_next_links(url, resp):
     links = set()
     # Check if the response status is 200 (OK)
     if resp.status == 200:
+        # Create a BeautifulSoup object to parse the HTML content
+        soup = BeautifulSoup(resp.raw_response.content, 'html.parser')
         # Find all anchor tags in the HTML content
-        anchor_tags = re.findall(r'<a\s+(?:[^>]*?\s+)?href="([^"]*)"', resp.raw_response.content.decode('utf-8'),
-                                 re.IGNORECASE)
-        for link in anchor_tags:
+        anchor_tags = soup.find_all('a', href=True)
+        for tag in anchor_tags:
+            link = tag['href']
             # Normalize the URL and add it to the set of links
             normalized_link = normalize(link)
             if is_valid(normalized_link):
@@ -104,17 +106,17 @@ def is_valid(url):
             "stat.uci.edu"
         ]
         if any(domain.endswith(subdomain) for subdomain in allowed_domains):
-            return True
-
-        return not re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
-            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-            + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+            return not re.match(
+                r".*\.(css|js|bmp|gif|jpe?g|ico"
+                + r"|png|tiff?|mid|mp2|mp3|mp4"
+                + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
+                + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
+                + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
+                + r"|epub|dll|cnf|tgz|sha1"
+                + r"|thmx|mso|arff|rtf|jar|csv"
+                + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+        else:
+            return False
 
 
     except TypeError:
@@ -138,15 +140,14 @@ def get_longest_page(crawled_pages):
     return longest_page
 
 def get_common_words(crawled_pages):
-    all_text = ""
+    all_text = b""
     for _, html_content in crawled_pages:
-        soup = BeautifulSoup(html_content, 'html.parser')
-        # Remove HTML markup and extract text
-        text = soup.get_text()
-        all_text += text + " "
-
+        all_text += html_content  # Accumulate bytes content
+    soup = BeautifulSoup(all_text, 'html.parser')
+    # Remove HTML markup and extract text
+    text = soup.get_text()
     # Count occurrences of each word
-    words = re.findall(r'\b\w+\b', all_text.lower())
+    words = re.findall(r'\b\w+\b', text.lower())
     # Load English stop words
     with open('english_stopwords.txt', 'r') as f:
         stop_words = set(f.read().splitlines())
@@ -198,17 +199,22 @@ def log_subdomains_info(crawled_pages):
         logging.info(f"{subdomain}: {num_pages} unique pages")
 
 # Modify the crawl_pages function to return crawled pages
-def crawl_pages(url,resp):
+def crawl_pages(url, resp):
     # Implement your crawling logic here
     crawled_pages = []
     if resp is not None:
-        num_words = count_words(resp.raw_response.content.decode('utf-8'))
-        crawled_pages.append((url, resp.raw_response.content.decode('utf-8')))
-        # Log progress
-        logging.info(f"Crawled {url}, found {num_words} words")
+        if resp.status==200 and resp.raw_response is not None:
+            num_words = count_words(resp.raw_response.content)
+            crawled_pages.append((url, resp.raw_response.content))
+            # Log progress
+            logging.info(f"Crawled {url}, found {num_words} words")
     return crawled_pages
 
+
 def log_stats(crawled_pages):
+    if not crawled_pages:
+        logging.info("No pages were crawled.")
+        return
     log_longest_page(crawled_pages)
     log_common_words(crawled_pages)
     log_subdomains_info(crawled_pages)
