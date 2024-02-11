@@ -4,9 +4,11 @@ from argparse import ArgumentParser
 from utils.server_registration import get_cache_server
 from utils.config import Config
 from crawler import Crawler
-
+import logging
 
 def main(config_file, restart):
+    logging.basicConfig(filename='crawler.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
     cparser = ConfigParser()
     cparser.read(config_file)
     config = Config(cparser)
