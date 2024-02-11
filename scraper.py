@@ -6,6 +6,8 @@ import time
 from urllib.robotparser import RobotFileParser
 import logging
 
+Crawled_pages = []
+Crawl_count=0
 class PolitenessManager:
     def __init__(self):
         self.last_access = {}
@@ -44,13 +46,18 @@ class TrapDetector:
             return False
 
 def scraper(url, resp):
+    global Crawl_count
+    global Crawled_pages
+    Crawl_count+=1
+    if(Crawl_count == 50):
+        log_stats(Crawled_pages)
+        Crawl_count=0
     politeness_manager = PolitenessManager()
     trap_detector = TrapDetector()
 
     if politeness_manager.can_access(url) and not trap_detector.detect_trap(url) and is_valid(url):
         links = extract_next_links(url, resp)
-        crawled_pages = crawl_pages(url, resp)
-        log_stats(crawled_pages)
+        crawl_pages(url, resp)
         return links
     else:
         return []
@@ -136,6 +143,8 @@ def get_unique_pages_count(crawled_pages):
     return len(unique_pages)
 
 def get_longest_page(crawled_pages):
+    if not crawled_pages:
+        return None  # or handle the case accordingly
     longest_page = max(crawled_pages, key=lambda x: x[1])
     return longest_page
 
@@ -183,8 +192,11 @@ def log_unique_pages_count(crawled_pages):
     logging.info(f"Number of unique pages found: {unique_pages_count}")
 
 def log_longest_page(crawled_pages):
+    if not crawled_pages:
+        logging.info("No pages were crawled.")
+        return
     longest_page = get_longest_page(crawled_pages)
-    logging.info(f"Longest page number of words: ({longest_page[0]} words)")
+    logging.info(f"Longest page in terms of the number of words: {longest_page[0]} ({longest_page[1]} words)")
 
 def log_common_words(crawled_pages):
     common_words = get_common_words(crawled_pages)
@@ -201,14 +213,15 @@ def log_subdomains_info(crawled_pages):
 # Modify the crawl_pages function to return crawled pages
 def crawl_pages(url, resp):
     # Implement your crawling logic here
-    crawled_pages = []
+    global Crawled_pages
+
     if resp is not None:
         if resp.status==200 and resp.raw_response is not None:
             num_words = count_words(resp.raw_response.content)
-            crawled_pages.append((url, resp.raw_response.content))
+            Crawled_pages.append((url, resp.raw_response.content))
             # Log progress
             logging.info(f"Crawled {url}, found {num_words} words")
-    return crawled_pages
+
 
 
 def log_stats(crawled_pages):
