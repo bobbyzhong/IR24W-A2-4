@@ -61,6 +61,7 @@ class ScraperStats:
         return f'Unique Pages: {self.unique_pages}'
     
     def is_trap(self, parsed):
+        # Need to test
         if parsed[:6] == "mailto":
             return True
         
