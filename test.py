@@ -127,7 +127,7 @@ def extract_next_links(url, resp):
     stats.update_word_count(text)
     print("UNIQUE PAGES", stats.print_unique_pages())
 
-    # can detect traps with same path URL multiple time cutoffs
+    # can detect traps with same path URL multiple time cutoff
     
 
     for link in soup.find_all("a"):
