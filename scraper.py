@@ -116,6 +116,7 @@ def extract_next_links(url, resp):
     stats.update_longest_page(text)
     stats.update_word_count(text)
     print("UNIQUE PAGES", stats.print_unique_pages())
+    print("IS VALID", is_valid(url))
 
     # can detect traps with same path URL multiple time cutoffs
     

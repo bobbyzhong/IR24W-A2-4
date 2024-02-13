@@ -85,7 +85,8 @@ class ScraperStats:
             return True
         
         domainName = parsed.netloc + parsed.path
-        self.domain_counts[domainName] += 1
+        if len(domainName) > 0:
+            self.domain_counts[domainName] += 1
         if self.domain_counts[domainName] > 14:
             return True
         
